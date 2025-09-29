@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Parent Event – Wireframe (3 Dates, Single Product)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Font Awesome for location icon -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    referrerpolicy="no-referrer"
+  />
+
+  <style>
+    /* --- Page Frame --- */
+    body { margin: 0; padding: 24px 0; font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
+    .page { width: 1200px; margin: 0 auto; }
+
+    /* --- Featured Image (80% width, centered) --- */
+    .featured-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
+    .featured {
+      width: 80%;
+      aspect-ratio: 16/9;  /* 1920x1080 placeholder aspect */
+      border: 1px dashed #bbb;
+      display: grid;
+      place-items: center;
+      background: #f7f7f7;
+      color: #666;
+      text-align: center;
+      padding: 8px;
+    }
+
+    /* --- Two Column Layout (60/40) --- */
+    .columns { display: grid; grid-template-columns: 3fr 2fr; gap: 24px; margin-bottom: 48px; }
+
+    /* --- Left Column Content --- */
+    .meta-date { font-size: 16px; color: #333; margin: 0 0 8px; }
+    .meta-date b { font-weight: 700; }
+    h1 { margin: 0 0 12px; font-size: 28px; font-weight: 700; }
+    .short-desc { margin: 0 0 24px; color: #444; }
+    h2 { margin: 24px 0 12px; font-size: 20px; }
+
+    .location-name { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .location-name i { color: #1a73e8; }
+    .address { margin-top: 4px; color: #333; }
+
+    /* Map reveal */
+    details.map { margin-top: 10px; }
+    details.map summary {
+      list-style: none; cursor: pointer; color: #1a73e8; display: inline-block; padding: 4px 0;
+    }
+    details.map summary::-webkit-details-marker { display: none; }
+    .map-embed { margin-top: 10px; aspect-ratio: 16/9; width: 100%; border: 1px solid #ccc; background: #fafafa; }
+    .map-embed iframe { width: 100%; height: 100%; border: 0; }
+
+    .full-desc { margin-top: 24px; color: #333; line-height: 1.5; }
+
+    /* --- Date/Time Selector (3 compact boxes) --- */
+    .selected-display { font-size: 16px; color: #111; margin-bottom: 12px; }
+    .date-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+    .date-card {
+      width: 160px;             /* keep boxes from being too wide */
+      border: 1px dashed #bbb;
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+      background: #fafafa;
+    }
+    .date-card b { font-weight: 700; }
+    .date-card .month { font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; color: #555; }
+    .date-card .daynum { font-size: 22px; font-weight: 800; }
+    .date-card .time { font-weight: 700; }
+    .date-radio { position: absolute; opacity: 0; pointer-events: none; }
+    .date-card[data-selected="true"] { border-style: solid; background: #f0f6ff; }
+
+    /* --- Right Column Card (single product; price left / CTA right) --- */
+    .side-card {
+      border: 1px solid #ccc; padding: 16px; border-radius: 6px;
+      display: grid;
+      grid-template-columns: 1fr auto;  /* date left, CTA right */
+      align-items: center;
+      gap: 16px;
+    }
+    .price-area { display: flex; flex-direction: column; gap: 4px; }
+    .price { font-weight: 700; }
+    .price-sub { font-size: 14px; color: #444; }
+
+    .cta {
+      display: inline-block;
+      padding: 10px 14px;
+      border: 1px solid #000;
+      background: #eee;
+      text-decoration: none;
+      color: #000;
+      border-radius: 4px;
+    }
+
+    /* --- More Events --- */
+    .more-wrap { text-align: center; margin: 24px 0 16px; }
+    .more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
+    .event-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; display: grid; gap: 8px; }
+    .event-thumb { width: 100%; aspect-ratio: 16/9; border: 1px dashed #bbb; background: #f5f5f5; display: grid; place-items: center; color: #666; font-size: 14px; }
+    .event-title { font-weight: 700; }
+    .event-loc, .event-short { color: #444; font-size: 14px; }
+    .event-cta {
+      margin-top: 8px;
+      display: inline-flex; justify-content: center; align-items: center;
+      padding: 8px 16px; border: 1px solid #000; background: #eee;
+      text-decoration: none; color: #000; border-radius: 4px;
+      min-width: 120px; text-align: center;
+    }
+
+    /* ===================== */
+    /* Modal (popup) styles  */
+    /* ===================== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 9999;
+    }
+    .modal.open { display: flex; }
+
+    .modal-dialog {
+      width: 100%;
+      max-width: 960px;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 12px;
+    }
+    .modal-close {
+      background: #f1f1f1;
+      border: 0;
+      border-radius: 999px;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .modal-body {
+      display: grid;
+      grid-template-columns: 6fr 4fr; /* 60% / 40% */
+      gap: 0;
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* Left side */
+    .modal-left {
+      padding: 20px 24px;
+      max-height: 70vh;          /* inner scroll so content fits */
+      overflow: auto;
+    }
+    .modal-title {
+      text-align: center;
+      color: #2f2e41;
+      font-weight: 600;
+      font-size: 20px;
+      margin: 4px 0 6px;
+    }
+    .modal-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0 0 12px;
+    }
+    .modal-left hr {
+      border: 0;
+      border-top: 1px solid #e5e7eb;
+      margin: 12px 0 16px;
+    }
+
+    /* Form grid */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 12px; color: #333; }
+    .field input, .field select {
+      height: 34px;
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font: inherit;
+      background: #fff;
+    }
+    .field input::placeholder { color: #6b7280; }
+
+    /* Right side (no price version) */
+    .modal-right {
+      padding: 20px 16px;
+      border-left: 1px solid #eee;
+      background: #fafafa;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .summary-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border: 1px dashed #bbb;
+      background: #f5f5f5;
+      display: grid; place-items: center; color: #666; font-size: 12px;
+    }
+    .summary-title { font-weight: 600; margin-top: 4px; }
+    .qty-row {
+      display: grid;
+      grid-template-columns: auto auto auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .qty-label { font-size: 14px; }
+    .qty-controls {
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 6px;
+      align-items: center;
+    }
+    .qty-btn {
+      width: 24px; height: 24px; border-radius: 4px;
+      border: 1px solid #ccc; background: #fff; cursor: pointer;
+      font: inherit; line-height: 1;
+    }
+
+    .modal-footer { padding: 14px; display: grid; place-items: center; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Top Featured Image (80% width, centered) -->
+    <div class="featured-wrap">
+      <div class="featured">[parent featured image]</div>
+    </div>
+
+    <!-- Two Columns: Left 60% / Right 40% -->
+    <div class="columns">
+
+      <!-- LEFT COLUMN (60%) -->
+      <section>
+        <!-- Next Event line w/ time -->
+        <p class="meta-date"><b>Next Event:</b> [day of week], [month] [date] • [start time] [timezone]</p>
+        <h1>[parent event name]</h1>
+        <p class="short-desc">[parent short description]</p>
+
+        <h2>Select Date and Time</h2>
+        <!-- Currently selected -->
+        <div class="selected-display">[day of week], [month] [date] at [start time]</div>
+
+        <!-- Only 3 child event date options -->
+        <div class="date-grid" role="listbox" aria-label="Select date and time">
+          <!-- Option 1 (pre-selected) -->
+          <label class="date-card" data-selected="true">
+            <input class="date-radio" type="radio" name="parent-date" value="opt1" checked />
+            <b>[day of week]</b>
+            <div class="month">[MONTH]</div>
+            <div class="daynum">[date]</div>
+            <div class="time">[start time]</div>
+          </label>
+
+          <!-- Option 2 -->
+          <label class="date-card">
+            <input class="date-radio" type="radio" name="parent-date" value="opt2" />
+            <b>[day of week]</b>
+            <div class="month">[MONTH]</div>
+            <div class="daynum">[date]</div>
+            <div class="time">[start time]</div>
+          </label>
+
+          <!-- Option 3 -->
+          <label class="date-card">
+            <input class="date-radio" type="radio" name="parent-date" value="opt3" />
+            <b>[day of week]</b>
+            <div class="month">[MONTH]</div>
+            <div class="daynum">[date]</div>
+            <div class="time">[start time]</div>
+          </label>
+        </div>
+
+        <!-- Location -->
+        <h2>Location</h2>
+        <div class="location-name">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          [location name]
+        </div>
+        <div class="address">[location address], [location city], [location state] [location zipcode]</div>
+
+        <!-- Get Directions (Map) -->
+        <details class="map">
+          <summary>Get Directions</summary>
+          <div class="map-embed" aria-label="Map">
+            <iframe
+              title="Google Map"
+              loading="lazy"
+              allowfullscreen
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=[location address], [location city], [location state] [location zipcode]&output=embed">
+            </iframe>
+          </div>
+        </details>
+
+        <!-- Full Description -->
+        <div class="full-desc">
+          [parent event description]
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN (40%) -->
+      <aside>
+        <div class="side-card">
+          <!-- Date/time only (price removed) -->
+          <div class="price-area">
+            <!-- <div class="price">[product price]</div>  -- removed as requested -->
+            <div class="price-sub">[month] [date] • [start time] [timezone]</div>
+          </div>
+
+          <!-- CTA (right) -->
+          <a class="cta" href="javascript:void(0)" id="openModalBtn">[parent event cta]</a>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- More Events -->
+    <div class="more-wrap">
+      <h2>More Events</h2>
+    </div>
+
+    <section class="more-grid">
+      <!-- Card 1 -->
+      <article class="event-card">
+        <div class="event-thumb">[child featured image]</div>
+        <div class="event-title">[child event title]</div>
+        <div class="event-loc">[location name], [location address], [location city], [location state], [location zipcode]</div>
+        <div class="event-short">[child event short description]</div>
+        <a class="event-cta" href="javascript:void(0)">[child event cta]</a>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="event-card">
+        <div class="event-thumb">[child featured image]</div>
+        <div class="event-title">[child event title]</div>
+        <div class="event-loc">[location name], [location address], [location city], [location state], [location zipcode]</div>
+        <div class="event-short">[child event short description]</div>
+        <a class="event-cta" href="javascript:void(0)">[child event cta]</a>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="event-card">
+        <div class="event-thumb">[child featured image]</div>
+        <div class="event-title">[child event title]</div>
+        <div class="event-loc">[location name], [location address], [location city], [location state], [location zipcode]</div>
+        <div class="event-short">[child event short description]</div>
+        <a class="event-cta" href="javascript:void(0)">[child event cta]</a>
+      </article>
+    </section>
+
+  </div>
+
+  <!-- ========================= -->
+  <!-- Pop-up (Modal) Markup — No Price Version -->
+  <div class="modal" id="orderModal" aria-hidden="true" role="dialog" aria-label="Order popup">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <button class="modal-close" type="button" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Left 60% -->
+        <div class="modal-left">
+          <div class="modal-title">[parent event name]</div>
+          <div class="modal-subtitle">[day of week], [month] [date] • [start time] – [end time] [timezone]</div>
+          <hr />
+
+          <!-- Contact form -->
+          <div class="form-grid">
+            <div class="field">
+              <label for="first" class="sr-only">First Name</label>
+              <input id="first" type="text" placeholder="First name*" />
+            </div>
+            <div class="field">
+              <label for="last" class="sr-only">Last Name</label>
+              <input id="last" type="text" placeholder="Last name*" />
+            </div>
+            <div class="field">
+              <label for="email" class="sr-only">Email</label>
+              <input id="email" type="email" placeholder="Primary Email*" />
+            </div>
+            <div class="field">
+              <label for="phone" class="sr-only">Phone</label>
+              <input id="phone" type="tel" placeholder="Primary Phone*" />
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="industry">Industry</label>
+              <select id="industry">
+                <option value="">Select Industry</option>
+                <option>Real Estate</option>
+                <option>Finance</option>
+                <option>Technology</option>
+                <option>Education</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 40% -->
+        <aside class="modal-right">
+          <div class="summary-image">[child featured image]</div>
+          <div class="summary-title">Order Summary</div>
+
+          <!-- Quantity only -->
+          <div class="qty-row">
+            <div class="qty-label">Quantity</div>
+            <div class="qty-controls">
+              <button class="qty-btn" data-action="decr">-</button>
+              <span id="qtyVal">1</span>
+              <button class="qty-btn" data-action="incr">+</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="modal-footer">
+        <a class="cta" href="javascript:void(0)">[parent event cta]</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minimal JS to open/close and quantity control -->
+  <script>
+    (function () {
+      const openBtn = document.getElementById('openModalBtn');
+      const modal = document.getElementById('orderModal');
+      const closeBtn = modal.querySelector('.modal-close');
+      const qtyVal = document.getElementById('qtyVal');
+
+      function openModal() {
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+      function closeModal() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      openBtn && openBtn.addEventListener('click', openModal);
+      closeBtn && closeBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+      // Quantity buttons (no pricing logic)
+      modal.querySelectorAll('.qty-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          let q = parseInt(qtyVal.textContent, 10) || 1;
+          if (btn.dataset.action === 'incr') q++;
+          if (btn.dataset.action === 'decr') q = Math.max(1, q - 1);
+          qtyVal.textContent = q;
+        });
+      });
+
+      // Date card UI toggle (keep existing behavior)
+      document.querySelectorAll('.date-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.date-card').forEach(c => c.dataset.selected = "false");
+          card.dataset.selected = "true";
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
